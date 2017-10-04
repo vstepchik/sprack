@@ -1,0 +1,7 @@
+[package]
+name = "sprack"
+version = "0.1.0"
+authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
+
+[dependencies]
+rand = "*"
