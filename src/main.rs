@@ -5,7 +5,7 @@ mod sprack;
 use rand::Rng;
 use sprack::*;
 
-fn generate_rectangles(count: usize, min: Dimension, max: Dimension) -> Box<Vec<Dimension>> {
+fn generate_rectangles(count: usize, min: Dimension, max: Dimension) -> Vec<Dimension> {
   let mut rects: Vec<Dimension> = Vec::with_capacity(count);
   let mut rng = rand::thread_rng();
 
@@ -15,17 +15,18 @@ fn generate_rectangles(count: usize, min: Dimension, max: Dimension) -> Box<Vec<
     rects.push(Dimension { w, h });
   }
 
-  Box::new(rects)
+  rects
 }
 
 fn main() {
-  let min = Dimension::new(16, 16);
-  let max = Dimension::new(96, 96);
+  let min = Dimension::new(8, 8);
+  let max = Dimension::new(64, 64);
   let rectangles = generate_rectangles(1_000, min, max);
-//  println!("{:?}", rectangles);
 
   match pack(rectangles.as_ref(), PackOptions { flipping: true, ..Default::default() }) {
-    Ok(bins) => println!("Got result: {:?}", bins.len()),
-    Err(e) => eprintln!("Error: {}", e.msg),
+    Ok(solutions) => for solution in solutions {
+      println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
+    }
+    Err(e) => eprintln!("Error: {}", e.0),
   }
 }

@@ -14,7 +14,7 @@ pub struct Rectangle {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Bin {
   pub size: Dimension,
-  pub rectangles: Box<Vec<Rectangle>>,
+  pub rectangles: Vec<Rectangle>,
   node: Box<Node>,
   last_rejected_size: Dimension,
 }
@@ -37,7 +37,7 @@ impl Bin {
   pub fn new(size: &Dimension) -> Bin {
     Bin {
       size: *size,
-      rectangles: Box::new(Vec::new()),
+      rectangles: Vec::new(),
       node: Box::new(Node::new(size)),
       last_rejected_size: *size,
     }
@@ -50,15 +50,17 @@ impl Bin {
       Fit::Yes(flip) | Fit::Exact(flip) => if flip && !flipping_allowed { return false; }
     }
 
-    return if let Some(rectangle) = self.node.insert(rect, id, flipping_allowed) {
+    if let Some(rectangle) = self.node.insert(rect, id, flipping_allowed) {
       self.rectangles.push(rectangle);
       true
     } else {
       self.last_rejected_size = *rect;
       false
-    };
+    }
   }
 }
+
+pub type FunctionReference = (fn(&Dimension, &Dimension) -> Ordering, &'static str);
 
 impl Dimension {
   pub fn new(w: u32, h: u32) -> Dimension {
@@ -70,7 +72,7 @@ impl Dimension {
     if self.h == inner.w && self.w == inner.h { return Fit::Exact(true); }
     if self.w >= inner.w && self.h >= inner.h { return Fit::Yes(false); }
     if self.h >= inner.w && self.w >= inner.h { return Fit::Yes(true); }
-    return Fit::No;
+    Fit::No
   }
 
   fn cmp_by_area(l: &Dimension, r: &Dimension) -> Ordering { (l.w * l.h).cmp(&(r.w * r.h)) }
@@ -83,13 +85,13 @@ impl Dimension {
 
   fn cmp_by_h(l: &Dimension, r: &Dimension) -> Ordering { l.h.cmp(&r.h) }
 
-  fn comparison_modes() -> Vec<fn(&Dimension, &Dimension) -> Ordering> {
+  pub fn comparison_modes() -> Vec<FunctionReference> {
     vec![
-      Dimension::cmp_by_area,
-      Dimension::cmp_by_perimeter,
-      Dimension::cmp_by_max_side,
-      Dimension::cmp_by_w,
-      Dimension::cmp_by_h,
+      (Dimension::cmp_by_area, "area"),
+      (Dimension::cmp_by_perimeter, "perimeter"),
+      (Dimension::cmp_by_max_side, "max_side"),
+      (Dimension::cmp_by_w, "width"),
+      (Dimension::cmp_by_h, "height"),
     ]
   }
 }
@@ -163,11 +165,11 @@ impl Node {
       self.child2 = Some(Box::new(Node::from_bound_box(b.l(), b.t() + h, b.r(), b.b())));
     }
 
-    return if let Some(ref mut child1) = self.child1 {
+    if let Some(ref mut child1) = self.child1 {
       child1.insert(rect, id, flipping_allowed)
     } else {
       println!("d: no child1 !?!?!?");
       None
-    };
+    }
   }
 }
