@@ -1,4 +1,4 @@
-use std::cmp::{Ordering, max};
+use std::cmp::{Ordering, min, max};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Dimension { pub w: u32, pub h: u32 }
@@ -12,9 +12,15 @@ pub struct Rectangle {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Placement {
+  pub index: u32,
+  pub rect: Rectangle,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Bin {
   pub size: Dimension,
-  pub rectangles: Vec<Rectangle>,
+  pub placements: Vec<Placement>,
   node: Box<Node>,
   last_rejected_size: Dimension,
 }
@@ -37,7 +43,7 @@ impl Bin {
   pub fn new(size: &Dimension) -> Bin {
     Bin {
       size: *size,
-      rectangles: Vec::new(),
+      placements: Vec::new(),
       node: Box::new(Node::new(size)),
       last_rejected_size: *size,
     }
@@ -50,8 +56,8 @@ impl Bin {
       Fit::Yes(flip) | Fit::Exact(flip) => if flip && !flipping_allowed { return false; }
     }
 
-    if let Some(rectangle) = self.node.insert(rect, id, flipping_allowed) {
-      self.rectangles.push(rectangle);
+    if let Some(rect) = self.node.insert(rect, id, flipping_allowed) {
+      self.placements.push(Placement { rect, index: id });
       true
     } else {
       self.last_rejected_size = *rect;
@@ -75,15 +81,29 @@ impl Dimension {
     Fit::No
   }
 
-  fn cmp_by_area(l: &Dimension, r: &Dimension) -> Ordering { (l.w * l.h).cmp(&(r.w * r.h)) }
+  fn cmp_by_area(l: &Dimension, r: &Dimension) -> Ordering { (r.w * r.h).cmp(&(l.w * l.h)) }
 
-  fn cmp_by_perimeter(l: &Dimension, r: &Dimension) -> Ordering { (l.w + l.h).cmp(&(r.w + r.h)) }
+  fn cmp_by_perimeter(l: &Dimension, r: &Dimension) -> Ordering { (r.w + r.h).cmp(&(l.w + l.h)) }
 
-  fn cmp_by_max_side(l: &Dimension, r: &Dimension) -> Ordering { max(l.w, l.h).cmp(&max(r.w, r.h)) }
+  fn cmp_by_max_side(l: &Dimension, r: &Dimension) -> Ordering { max(r.w, r.h).cmp(&max(l.w, l.h)) }
 
-  fn cmp_by_w(l: &Dimension, r: &Dimension) -> Ordering { l.w.cmp(&r.w) }
+  fn cmp_by_w(l: &Dimension, r: &Dimension) -> Ordering { r.w.cmp(&l.w) }
 
-  fn cmp_by_h(l: &Dimension, r: &Dimension) -> Ordering { l.h.cmp(&r.h) }
+  fn cmp_by_h(l: &Dimension, r: &Dimension) -> Ordering { r.h.cmp(&l.h) }
+
+  fn cmp_by_squareness_area(l: &Dimension, r: &Dimension) -> Ordering {
+    Dimension::sqa(r).partial_cmp(&Dimension::sqa(&l)).unwrap_or(Ordering::Equal)
+  }
+
+  fn cmp_by_squareness_perimeter(l: &Dimension, r: &Dimension) -> Ordering {
+    Dimension::sqp(r).partial_cmp(&Dimension::sqp(&l)).unwrap_or(Ordering::Equal)
+  }
+
+  fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
+
+  fn sqa(d: &Dimension) -> f32 { Dimension::sq(&d) * (d.w * d.h) as f32 }
+
+  fn sqp(d: &Dimension) -> f32 { Dimension::sq(&d) * (d.w + d.h) as f32 }
 
   pub fn comparison_modes() -> Vec<FunctionReference> {
     vec![
@@ -92,6 +112,8 @@ impl Dimension {
       (Dimension::cmp_by_max_side, "max_side"),
       (Dimension::cmp_by_w, "width"),
       (Dimension::cmp_by_h, "height"),
+      (Dimension::cmp_by_squareness_area, "squareness_area"),
+      (Dimension::cmp_by_squareness_perimeter, "squareness_perimeter"),
     ]
   }
 }

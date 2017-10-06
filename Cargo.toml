@@ -5,3 +5,5 @@ authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 
 [dependencies]
 rand = "*"
+image = "*"
+imageproc = "*"
