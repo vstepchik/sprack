@@ -1,5 +1,3 @@
-use std::cmp::{Ordering, min, max};
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Dimension { pub w: u32, pub h: u32 }
 
@@ -66,8 +64,6 @@ impl Bin {
   }
 }
 
-pub type FunctionReference = (fn(&Dimension, &Dimension) -> Ordering, &'static str);
-
 impl Dimension {
   pub fn new(w: u32, h: u32) -> Dimension {
     Dimension { w, h }
@@ -79,42 +75,6 @@ impl Dimension {
     if self.w >= inner.w && self.h >= inner.h { return Fit::Yes(false); }
     if self.h >= inner.w && self.w >= inner.h { return Fit::Yes(true); }
     Fit::No
-  }
-
-  fn cmp_by_area(l: &Dimension, r: &Dimension) -> Ordering { (r.w * r.h).cmp(&(l.w * l.h)) }
-
-  fn cmp_by_perimeter(l: &Dimension, r: &Dimension) -> Ordering { (r.w + r.h).cmp(&(l.w + l.h)) }
-
-  fn cmp_by_max_side(l: &Dimension, r: &Dimension) -> Ordering { max(r.w, r.h).cmp(&max(l.w, l.h)) }
-
-  fn cmp_by_w(l: &Dimension, r: &Dimension) -> Ordering { r.w.cmp(&l.w) }
-
-  fn cmp_by_h(l: &Dimension, r: &Dimension) -> Ordering { r.h.cmp(&l.h) }
-
-  fn cmp_by_squareness_area(l: &Dimension, r: &Dimension) -> Ordering {
-    Dimension::sqa(r).partial_cmp(&Dimension::sqa(&l)).unwrap_or(Ordering::Equal)
-  }
-
-  fn cmp_by_squareness_perimeter(l: &Dimension, r: &Dimension) -> Ordering {
-    Dimension::sqp(r).partial_cmp(&Dimension::sqp(&l)).unwrap_or(Ordering::Equal)
-  }
-
-  fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
-
-  fn sqa(d: &Dimension) -> f32 { Dimension::sq(&d) * (d.w * d.h) as f32 }
-
-  fn sqp(d: &Dimension) -> f32 { Dimension::sq(&d) * (d.w + d.h) as f32 }
-
-  pub fn comparison_modes() -> Vec<FunctionReference> {
-    vec![
-      (Dimension::cmp_by_area, "area"),
-      (Dimension::cmp_by_perimeter, "perimeter"),
-      (Dimension::cmp_by_max_side, "max_side"),
-      (Dimension::cmp_by_w, "width"),
-      (Dimension::cmp_by_h, "height"),
-      (Dimension::cmp_by_squareness_area, "squareness_area"),
-      (Dimension::cmp_by_squareness_perimeter, "squareness_perimeter"),
-    ]
   }
 }
 

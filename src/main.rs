@@ -10,6 +10,7 @@ use image::*;
 use std::fs::File;
 use std::path::Path;
 
+#[derive(Debug)]
 struct Sample {
   d: Dimension,
   color: Rgba<u8>,
@@ -64,9 +65,9 @@ fn draw_bin(path: &str, samples: &[Sample], bin: &Bin) {
 }
 
 fn main() {
-  let min = Dimension::new(2, 2);
+  let min = Dimension::new(8, 8);
   let max = Dimension::new(64, 64);
-  let samples = generate_rectangles(200, min, max);
+  let samples = generate_rectangles(50, min, max);
   let rectangles = samples.iter().map(|s| s.d).collect::<Vec<_>>();
 
   draw_samples("in.png", &samples);

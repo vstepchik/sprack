@@ -1,9 +1,14 @@
 mod algorithm;
 
+use std::cmp::{Ordering, min, max};
+
 pub use self::algorithm::Dimension;
 pub use self::algorithm::Rectangle;
 pub use self::algorithm::Bin;
 pub use self::algorithm::Fit;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct PackInput { pub dim: Dimension, pub id: u32 }
 
 #[derive(Debug)]
 pub struct PackResult { pub bins: Vec<Bin>, pub sorting_name: &'static str }
@@ -28,15 +33,15 @@ impl Default for PackOptions {
 
 
 pub fn pack(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<PackResult>, PackErr> {
-  report_sizes();
-
   if rectangles.iter().any(|r| options.bin_size.fits(r) == Fit::No) {
     return Err(PackErr("Some pieces do not fit bin size"));
   }
 
+  let inputs = rectangles.iter().enumerate()
+    .map(|(idx, dim)| { PackInput { id: idx as u32, dim: dim.clone() } }).collect::<Vec<_>>();
   let mut results = Vec::new();
-  for (sorting, name) in Dimension::comparison_modes() {
-    let mut cloned = rectangles.to_owned();
+  for (sorting, name) in PackInput::comparison_modes() {
+    let mut cloned = inputs.to_owned();
     cloned.sort_unstable_by(sorting);
 
     let bins = pack_sorted(&cloned, options)?;
@@ -46,16 +51,16 @@ pub fn pack(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<PackRe
   Ok(results)
 }
 
-fn pack_sorted(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<Bin>, PackErr> {
+fn pack_sorted(rectangles: &[PackInput], options: PackOptions) -> Result<Vec<Bin>, PackErr> {
   let mut bins: Vec<Bin> = vec![Bin::new(&options.bin_size)];
-  for (idx, &rect) in rectangles.iter().enumerate() {
+  for &input in rectangles {
     let mut packed = false;
     for bin in &mut bins {
-      if bin.insert(&rect, idx as u32, options.flipping) { packed = true; }
+      if bin.insert(&input.dim, input.id, options.flipping) { packed = true; }
     }
     if !packed {
       let mut new_bin = Bin::new(&options.bin_size);
-      new_bin.insert(&rect, idx as u32, options.flipping);
+      new_bin.insert(&input.dim, input.id, options.flipping);
       bins.push(new_bin);
     }
   }
@@ -63,14 +68,43 @@ fn pack_sorted(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<Bin
   Ok(bins)
 }
 
-fn report_sizes() {
-  use std::mem::size_of;
-  use self::algorithm::Node;
-  println!("---- Structure sizes ----");
-  println!("Dimension: {}b", size_of::<Dimension>());
-  println!("Rectangle: {}b", size_of::<Rectangle>());
-  println!("Node: {}b", size_of::<Node>());
-  println!("Bin: {}b", size_of::<Bin>());
-  println!("Fit: {}b", size_of::<Fit>());
-  println!();
+
+pub type FunctionReference = (fn(&PackInput, &PackInput) -> Ordering, &'static str);
+
+impl PackInput {
+  fn cmp_by_area(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w * r.dim.h).cmp(&(l.dim.w * l.dim.h)) }
+
+  fn cmp_by_perimeter(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w + r.dim.h).cmp(&(l.dim.w + l.dim.h)) }
+
+  fn cmp_by_max_side(l: &PackInput, r: &PackInput) -> Ordering { max(r.dim.w, r.dim.h).cmp(&max(l.dim.w, l.dim.h)) }
+
+  fn cmp_by_w(l: &PackInput, r: &PackInput) -> Ordering { r.dim.w.cmp(&l.dim.w) }
+
+  fn cmp_by_h(l: &PackInput, r: &PackInput) -> Ordering { r.dim.h.cmp(&l.dim.h) }
+
+  fn cmp_by_squareness_area(l: &PackInput, r: &PackInput) -> Ordering {
+    PackInput::sqa(&r.dim).partial_cmp(&PackInput::sqa(&l.dim)).unwrap_or(Ordering::Equal)
+  }
+
+  fn cmp_by_squareness_perimeter(l: &PackInput, r: &PackInput) -> Ordering {
+    PackInput::sqp(&r.dim).partial_cmp(&PackInput::sqp(&l.dim)).unwrap_or(Ordering::Equal)
+  }
+
+  fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
+
+  fn sqa(d: &Dimension) -> f32 { PackInput::sq(&d) * (d.w * d.h) as f32 }
+
+  fn sqp(d: &Dimension) -> f32 { PackInput::sq(&d) * (d.w + d.h) as f32 }
+
+  fn comparison_modes() -> Vec<FunctionReference> {
+    vec![
+      (PackInput::cmp_by_area, "area"),
+      (PackInput::cmp_by_perimeter, "perimeter"),
+      (PackInput::cmp_by_max_side, "max_side"),
+      (PackInput::cmp_by_w, "width"),
+      (PackInput::cmp_by_h, "height"),
+      (PackInput::cmp_by_squareness_area, "squareness_area"),
+      (PackInput::cmp_by_squareness_perimeter, "squareness_perimeter"),
+    ]
+  }
 }
