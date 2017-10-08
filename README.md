@@ -21,6 +21,11 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
 - [ ] Atlas trimming
 - [ ] Reading&Writing actual sprites
 - [ ] Command-line argument processing
+- [ ] Add metadata output
+  - [ ] JSON
+  - [ ] YAML
+  - [ ] RON?
+  - [ ] Protobuf?
 - [ ] Add manual and more details to `README.md`
 - [ ] Multi-threading
 - [ ] Tests?

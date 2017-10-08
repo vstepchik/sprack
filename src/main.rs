@@ -7,7 +7,6 @@ mod sprack;
 use sprack::*;
 use rand::Rng;
 use image::*;
-use std::fs::File;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -52,7 +51,7 @@ fn draw_samples(path: &'static str, samples: &[Sample]) {
   println!("samples [{}x{}] written to {}", size.w, size.h, path);
 }
 
-fn draw_bin(path: &str, samples: &[Sample], bin: &Bin) {
+fn draw_bin(path: &AsRef<Path>, samples: &[Sample], bin: &Bin) {
   let mut img = RgbaImage::new(bin.size.w, bin.size.h);
   for p in &bin.placements {
     imageproc::drawing::draw_filled_rect_mut(
@@ -69,17 +68,20 @@ fn main() {
   let max = Dimension::new(64, 64);
   let samples = generate_rectangles(50, min, max);
   let rectangles = samples.iter().map(|s| s.d).collect::<Vec<_>>();
+  let options = PackOptions { flipping: true, bin_size: Dimension { w: 256, h: 256 }, ..Default::default() };
 
   draw_samples("in.png", &samples);
 
-  match pack(&rectangles, PackOptions { flipping: true, bin_size: Dimension { w: 256, h: 256 }, ..Default::default() }) {
-    Ok(solutions) => for solution in solutions {
-      println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
-      std::fs::remove_dir("out");
-      std::fs::create_dir("out");
-      std::fs::create_dir(format!("out/{}", &solution.sorting_name));
-      for (idx, ref bin) in solution.bins.iter().enumerate() {
-        draw_bin(format!("out/{}/{}.png", &solution.sorting_name, idx).as_ref(), &samples, &bin);
+  match pack(&rectangles, &options) {
+    Ok(solutions) => {
+      for solution in solutions {
+        println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
+        let dir = Path::new(&options.output_path).join(&solution.sorting_name);
+        std::fs::remove_dir_all(&dir).expect(format!("Failed to delete dir {:?}", &dir).as_ref());
+        std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
+        for (bin_number, bin) in solution.bins.iter().enumerate() {
+          draw_bin(&dir.join(bin_number.to_string()).with_extension("png"), &samples, bin);
+        }
       }
     }
     Err(e) => eprintln!("Error: {}", e.0),

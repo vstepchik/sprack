@@ -1,6 +1,7 @@
 mod algorithm;
 
 use std::cmp::{Ordering, min, max};
+use std::path::Path;
 
 pub use self::algorithm::Dimension;
 pub use self::algorithm::Rectangle;
@@ -16,15 +17,17 @@ pub struct PackResult { pub bins: Vec<Bin>, pub sorting_name: &'static str }
 #[derive(Debug)]
 pub struct PackErr(pub &'static str);
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PackOptions {
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct PackOptions<'a> {
+  pub output_path: &'a Path,
   pub bin_size: Dimension,
   pub flipping: bool,
 }
 
-impl Default for PackOptions {
-  fn default() -> PackOptions {
+impl<'a> Default for PackOptions<'a> {
+  fn default() -> PackOptions<'a> {
     PackOptions {
+      output_path: Path::new("out"),
       bin_size: Dimension::new(512, 512),
       flipping: false,
     }
@@ -32,13 +35,18 @@ impl Default for PackOptions {
 }
 
 
-pub fn pack(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<PackResult>, PackErr> {
-  if rectangles.iter().any(|r| options.bin_size.fits(r) == Fit::No) {
+pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackResult>, PackErr> {
+  let dimension_bigger_than_bin = |r: &Dimension| match options.bin_size.fits(r) {
+    Fit::No => { true }
+    Fit::Yes(flip) | Fit::Exact(flip) => flip && !options.flipping
+  };
+
+  if rectangles.iter().any(dimension_bigger_than_bin) {
     return Err(PackErr("Some pieces do not fit bin size"));
   }
 
   let inputs = rectangles.iter().enumerate()
-    .map(|(idx, dim)| { PackInput { id: idx as u32, dim: dim.clone() } }).collect::<Vec<_>>();
+    .map(|(idx, dim)| { PackInput { id: idx as u32, dim: *dim } }).collect::<Vec<_>>();
   let mut results = Vec::new();
   for (sorting, name) in PackInput::comparison_modes() {
     let mut cloned = inputs.to_owned();
@@ -51,7 +59,7 @@ pub fn pack(rectangles: &[Dimension], options: PackOptions) -> Result<Vec<PackRe
   Ok(results)
 }
 
-fn pack_sorted(rectangles: &[PackInput], options: PackOptions) -> Result<Vec<Bin>, PackErr> {
+fn pack_sorted(rectangles: &[PackInput], options: &PackOptions) -> Result<Vec<Bin>, PackErr> {
   let mut bins: Vec<Bin> = vec![Bin::new(&options.bin_size)];
   for &input in rectangles {
     let mut packed = false;
@@ -92,9 +100,9 @@ impl PackInput {
 
   fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
 
-  fn sqa(d: &Dimension) -> f32 { PackInput::sq(&d) * (d.w * d.h) as f32 }
+  fn sqa(d: &Dimension) -> f32 { PackInput::sq(d) * (d.w * d.h) as f32 }
 
-  fn sqp(d: &Dimension) -> f32 { PackInput::sq(&d) * (d.w + d.h) as f32 }
+  fn sqp(d: &Dimension) -> f32 { PackInput::sq(d) * (d.w + d.h) as f32 }
 
   fn comparison_modes() -> Vec<FunctionReference> {
     vec![
