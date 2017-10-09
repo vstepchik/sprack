@@ -2,6 +2,7 @@ mod algorithm;
 
 use std::cmp::{Ordering, min, max};
 use std::path::Path;
+use std::collections::HashSet;
 
 pub use self::algorithm::Dimension;
 pub use self::algorithm::Rectangle;
@@ -17,11 +18,15 @@ pub struct PackResult { pub bins: Vec<Bin>, pub sorting_name: &'static str }
 #[derive(Debug)]
 pub struct PackErr(pub &'static str);
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum PackHeuristic { Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter }
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PackOptions<'a> {
   pub output_path: &'a Path,
   pub bin_size: Dimension,
   pub flipping: bool,
+  pub pack_heuristics: HashSet<PackHeuristic>,
 }
 
 impl<'a> Default for PackOptions<'a> {
@@ -30,6 +35,7 @@ impl<'a> Default for PackOptions<'a> {
       output_path: Path::new("out"),
       bin_size: Dimension::new(512, 512),
       flipping: false,
+      pack_heuristics: HashSet::new(),
     }
   }
 }
