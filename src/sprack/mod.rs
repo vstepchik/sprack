@@ -2,6 +2,8 @@ mod algorithm;
 
 use std::cmp::{Ordering, min, max};
 use std::path::Path;
+use std::slice::Iter;
+use std::iter::FromIterator;
 use std::collections::HashSet;
 
 pub use self::algorithm::Dimension;
@@ -26,7 +28,7 @@ pub struct PackOptions<'a> {
   pub output_path: &'a Path,
   pub bin_size: Dimension,
   pub flipping: bool,
-  pub pack_heuristics: HashSet<PackHeuristic>,
+  pub pack_heuristics: HashSet<&'a PackHeuristic>,
 }
 
 impl<'a> Default for PackOptions<'a> {
@@ -35,7 +37,7 @@ impl<'a> Default for PackOptions<'a> {
       output_path: Path::new("out"),
       bin_size: Dimension::new(512, 512),
       flipping: false,
-      pack_heuristics: HashSet::new(),
+      pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
     }
   }
 }
@@ -54,7 +56,7 @@ pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackR
   let inputs = rectangles.iter().enumerate()
     .map(|(idx, dim)| { PackInput { id: idx as u32, dim: *dim } }).collect::<Vec<_>>();
   let mut results = Vec::new();
-  for (sorting, name) in PackInput::comparison_modes() {
+  for (sorting, name) in options.pack_heuristics.iter().map(|h| h.get()) {
     let mut cloned = inputs.to_owned();
     cloned.sort_unstable_by(sorting);
 
@@ -83,9 +85,9 @@ fn pack_sorted(rectangles: &[PackInput], options: &PackOptions) -> Result<Vec<Bi
 }
 
 
-pub type FunctionReference = (fn(&PackInput, &PackInput) -> Ordering, &'static str);
+pub type HeuristicReference = (fn(&PackInput, &PackInput) -> Ordering, &'static str);
 
-impl PackInput {
+impl PackHeuristic {
   fn cmp_by_area(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w * r.dim.h).cmp(&(l.dim.w * l.dim.h)) }
 
   fn cmp_by_perimeter(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w + r.dim.h).cmp(&(l.dim.w + l.dim.h)) }
@@ -97,28 +99,35 @@ impl PackInput {
   fn cmp_by_h(l: &PackInput, r: &PackInput) -> Ordering { r.dim.h.cmp(&l.dim.h) }
 
   fn cmp_by_squareness_area(l: &PackInput, r: &PackInput) -> Ordering {
-    PackInput::sqa(&r.dim).partial_cmp(&PackInput::sqa(&l.dim)).unwrap_or(Ordering::Equal)
+    PackHeuristic::sqa(&r.dim).partial_cmp(&PackHeuristic::sqa(&l.dim)).unwrap_or(Ordering::Equal)
   }
 
   fn cmp_by_squareness_perimeter(l: &PackInput, r: &PackInput) -> Ordering {
-    PackInput::sqp(&r.dim).partial_cmp(&PackInput::sqp(&l.dim)).unwrap_or(Ordering::Equal)
+    PackHeuristic::sqp(&r.dim).partial_cmp(&PackHeuristic::sqp(&l.dim)).unwrap_or(Ordering::Equal)
   }
 
   fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
 
-  fn sqa(d: &Dimension) -> f32 { PackInput::sq(d) * (d.w * d.h) as f32 }
+  fn sqa(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w * d.h) as f32 }
 
-  fn sqp(d: &Dimension) -> f32 { PackInput::sq(d) * (d.w + d.h) as f32 }
+  fn sqp(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w + d.h) as f32 }
 
-  fn comparison_modes() -> Vec<FunctionReference> {
-    vec![
-      (PackInput::cmp_by_area, "area"),
-      (PackInput::cmp_by_perimeter, "perimeter"),
-      (PackInput::cmp_by_max_side, "max_side"),
-      (PackInput::cmp_by_w, "width"),
-      (PackInput::cmp_by_h, "height"),
-      (PackInput::cmp_by_squareness_area, "squareness_area"),
-      (PackInput::cmp_by_squareness_perimeter, "squareness_perimeter"),
-    ]
+  fn get(&self) -> HeuristicReference {
+    use PackHeuristic::*;
+    match *self {
+      Area => (PackHeuristic::cmp_by_area, "area"),
+      Perimeter => (PackHeuristic::cmp_by_perimeter, "perimeter"),
+      Side => (PackHeuristic::cmp_by_max_side, "max_side"),
+      Width => (PackHeuristic::cmp_by_w, "width"),
+      Height => (PackHeuristic::cmp_by_h, "height"),
+      SquarenessArea => (PackHeuristic::cmp_by_squareness_area, "squareness_area"),
+      SquarenessPerimeter => (PackHeuristic::cmp_by_squareness_perimeter, "squareness_perimeter"),
+    }
+  }
+
+  fn all() -> Iter<'static, PackHeuristic> {
+    use PackHeuristic::*;
+    static HEURISTICS: [PackHeuristic; 7] = [Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter];
+    HEURISTICS.into_iter()
   }
 }

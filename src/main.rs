@@ -73,15 +73,13 @@ fn main() {
   draw_samples("in.png", &samples);
 
   match pack(&rectangles, &options) {
-    Ok(solutions) => {
-      for solution in solutions {
-        println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
-        let dir = Path::new(&options.output_path).join(&solution.sorting_name);
-        std::fs::remove_dir_all(&dir).expect(format!("Failed to delete dir {:?}", &dir).as_ref());
-        std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
-        for (bin_number, bin) in solution.bins.iter().enumerate() {
-          draw_bin(&dir.join(bin_number.to_string()).with_extension("png"), &samples, bin);
-        }
+    Ok(solutions) => for solution in solutions {
+      println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
+      let dir = Path::new(&options.output_path).join(&solution.sorting_name);
+      std::fs::remove_dir_all(&dir).unwrap_or(());
+      std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
+      for (bin_number, bin) in solution.bins.iter().enumerate() {
+        draw_bin(&dir.join(bin_number.to_string()).with_extension("png"), &samples, bin);
       }
     }
     Err(e) => eprintln!("Error: {}", e.0),

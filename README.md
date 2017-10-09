@@ -14,12 +14,13 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [x] Sort by max side
   - [x] Sort by width
   - [x] Sort by height
-  - [x] Sort by squareness * area
-  - [x] Sort by squareness * perimeter
+  - [x] Sort by squareness × area
+  - [x] Sort by squareness × perimeter
 - [x] Demo rectangles packing, writing output images
 - [ ] Picking best result
 - [ ] Atlas trimming
 - [ ] Reading&Writing actual sprites
+- [ ] Split code into two crates (bin and lib)
 - [ ] Command-line argument processing
 - [ ] Add metadata output
   - [ ] JSON
