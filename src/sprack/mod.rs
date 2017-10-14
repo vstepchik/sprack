@@ -1,4 +1,6 @@
 mod algorithm;
+mod drawing;
+mod demo;
 
 use std::cmp::{Ordering, min, max};
 use std::path::Path;
@@ -6,10 +8,9 @@ use std::slice::Iter;
 use std::iter::FromIterator;
 use std::collections::HashSet;
 
-pub use self::algorithm::Dimension;
-pub use self::algorithm::Rectangle;
-pub use self::algorithm::Bin;
-pub use self::algorithm::Fit;
+pub use self::algorithm::{Dimension, Rectangle, Bin, Fit};
+pub use self::drawing::{draw_bin};
+pub use self::demo::{draw_samples, generate_rectangles};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PackInput { pub dim: Dimension, pub id: u32 }
@@ -58,7 +59,7 @@ pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackR
   let inputs = rectangles.iter().enumerate()
     .map(|(idx, dim)| { PackInput { id: idx as u32, dim: *dim } }).collect::<Vec<_>>();
   let mut results = Vec::new();
-  for &heuristic in options.pack_heuristics.iter() {
+  for &heuristic in &options.pack_heuristics {
     let mut cloned = inputs.to_owned();
     cloned.sort_unstable_by(heuristic.get().0);
 
