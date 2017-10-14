@@ -21,6 +21,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
 - [ ] Atlas trimming
 - [ ] Reading&Writing actual sprites
 - [ ] Split code into two crates (bin and lib)
+- [ ] Make lib crate extensible with custom heuristics
 - [ ] Command-line argument processing
 - [ ] Add metadata output
   - [ ] JSON
@@ -31,3 +32,4 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
 - [ ] Multi-threading
 - [ ] Tests?
 - [ ] Benchmarks?
+- [ ] Refactor until feel pride

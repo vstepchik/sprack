@@ -15,7 +15,7 @@ pub use self::algorithm::Fit;
 pub struct PackInput { pub dim: Dimension, pub id: u32 }
 
 #[derive(Debug)]
-pub struct PackResult { pub bins: Vec<Bin>, pub sorting_name: &'static str }
+pub struct PackResult { pub bins: Vec<Bin>, pub heuristics: PackHeuristic }
 
 #[derive(Debug)]
 pub struct PackErr(pub &'static str);
@@ -44,6 +44,8 @@ impl<'a> Default for PackOptions<'a> {
 
 
 pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackResult>, PackErr> {
+  if options.pack_heuristics.is_empty() { return Err(PackErr("No heuristics supplied")); };
+
   let dimension_bigger_than_bin = |r: &Dimension| match options.bin_size.fits(r) {
     Fit::No => { true }
     Fit::Yes(flip) | Fit::Exact(flip) => flip && !options.flipping
@@ -56,12 +58,12 @@ pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackR
   let inputs = rectangles.iter().enumerate()
     .map(|(idx, dim)| { PackInput { id: idx as u32, dim: *dim } }).collect::<Vec<_>>();
   let mut results = Vec::new();
-  for (sorting, name) in options.pack_heuristics.iter().map(|h| h.get()) {
+  for &heuristic in options.pack_heuristics.iter() {
     let mut cloned = inputs.to_owned();
-    cloned.sort_unstable_by(sorting);
+    cloned.sort_unstable_by(heuristic.get().0);
 
     let bins = pack_sorted(&cloned, options)?;
-    results.push(PackResult { sorting_name: name, bins });
+    results.push(PackResult { heuristics: *heuristic, bins });
   }
 
   Ok(results)
@@ -112,7 +114,7 @@ impl PackHeuristic {
 
   fn sqp(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w + d.h) as f32 }
 
-  fn get(&self) -> HeuristicReference {
+  pub fn get(&self) -> HeuristicReference {
     use PackHeuristic::*;
     match *self {
       Area => (PackHeuristic::cmp_by_area, "area"),

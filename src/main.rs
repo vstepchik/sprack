@@ -51,7 +51,7 @@ fn draw_samples(path: &'static str, samples: &[Sample]) {
   println!("samples [{}x{}] written to {}", size.w, size.h, path);
 }
 
-fn draw_bin(path: &AsRef<Path>, samples: &[Sample], bin: &Bin) {
+fn draw_bin(path: &AsRef<Path>, samples: &[Sample], bin: &Bin) -> u64 {
   let mut img = RgbaImage::new(bin.size.w, bin.size.h);
   for p in &bin.placements {
     imageproc::drawing::draw_filled_rect_mut(
@@ -61,6 +61,7 @@ fn draw_bin(path: &AsRef<Path>, samples: &[Sample], bin: &Bin) {
     );
   }
   img.save(path).unwrap();
+  path.as_ref().metadata().unwrap().len()
 }
 
 fn main() {
@@ -72,16 +73,30 @@ fn main() {
 
   draw_samples("in.png", &samples);
 
-  match pack(&rectangles, &options) {
-    Ok(solutions) => for solution in solutions {
-      println!("Got result sorting by {}, bins used: {}", solution.sorting_name, solution.bins.len());
-      let dir = Path::new(&options.output_path).join(&solution.sorting_name);
-      std::fs::remove_dir_all(&dir).unwrap_or(());
-      std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
-      for (bin_number, bin) in solution.bins.iter().enumerate() {
-        draw_bin(&dir.join(bin_number.to_string()).with_extension("png"), &samples, bin);
+  let best = match pack(&rectangles, &options) {
+    Ok(solutions) => {
+      let mut best: (Option<PackHeuristic>, u64) = (None, std::u64::MAX);
+      for solution in solutions {
+        let dir = Path::new(&options.output_path).join(&solution.heuristics.get().1);
+        std::fs::remove_dir_all(&dir).unwrap_or(());
+        std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
+        let mut size = 0;
+        for (bin_number, bin) in solution.bins.iter().enumerate() {
+          size += draw_bin(&dir.join(bin_number.to_string()).with_extension("png"), &samples, bin);
+        }
+        println!("Heuristic {} -> {} bins used, total size: {}b", solution.heuristics.get().1, solution.bins.len(), size);
+        if size < best.1 { best = (Some(solution.heuristics), size); }
       }
+      Some(best)
     }
-    Err(e) => eprintln!("Error: {}", e.0),
+    Err(e) => {
+      eprintln!("Error: {:?}", e);
+      None
+    }
+  };
+
+  if let Some(best) = best {
+    println!("Best results with {:?}, {} bytes total", best.0, best.1);
+    // todo: copy as "best"
   }
 }
