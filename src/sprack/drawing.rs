@@ -1,20 +1,19 @@
 extern crate image;
-extern crate imageproc;
 
 use image::*;
 use std::path::Path;
-use super::demo::Sample;
 use super::algorithm::Bin;
 
-pub fn draw_bin(path: &AsRef<Path>, samples: &[Sample], bin: &Bin) -> u64 {
-  let mut img = RgbaImage::new(bin.size.w, bin.size.h);
+pub fn draw_bin(path: &AsRef<Path>, images: &[RgbaImage], bin: &Bin) -> u64 {
+  let mut atlas = RgbaImage::new(bin.size.w, bin.size.h);
   for p in &bin.placements {
-    imageproc::drawing::draw_filled_rect_mut(
-      &mut img,
-      imageproc::rect::Rect::at(p.rect.x as i32, p.rect.y as i32).of_size(p.rect.size.w, p.rect.size.h),
-      samples[p.index as usize].color,
-    );
+    let img: ImageBuffer<_, _> = if p.rect.flipped {
+      imageops::rotate270(&images[p.index as usize])
+    } else {
+      images[p.index as usize].to_owned()
+    };
+    image::imageops::replace(&mut atlas, &img, p.rect.x, p.rect.y);
   }
-  img.save(path).unwrap();
+  atlas.save(path).unwrap();
   path.as_ref().metadata().unwrap().len()
 }

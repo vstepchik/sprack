@@ -19,7 +19,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
 - [x] Demo rectangles packing, writing output images
 - [ ] Picking best result
 - [ ] Atlas trimming
-- [ ] Reading&Writing actual sprites
+- [x] Writing sprites
 - [ ] Split code into two crates (bin and lib)
 - [ ] Make lib crate extensible with custom heuristics
 - [ ] Command-line argument processing

@@ -1,5 +1,4 @@
 extern crate image;
-extern crate imageproc;
 
 mod sprack;
 
@@ -7,13 +6,11 @@ use sprack::*;
 use std::path::Path;
 
 fn main() {
-  let min = Dimension::new(8, 8);
-  let max = Dimension::new(64, 64);
-  let samples = generate_rectangles(50, min, max);
-  let rectangles = samples.iter().map(|s| s.d).collect::<Vec<_>>();
+  let samples = generate_rectangles(50);
+  let rectangles = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
   let options = PackOptions { flipping: true, bin_size: Dimension { w: 256, h: 256 }, ..Default::default() };
 
-  draw_samples("in.png", &samples);
+  draw_samples(&options.output_path, &samples);
 
   let best = match pack(&rectangles, &options) {
     Ok(solutions) => {
