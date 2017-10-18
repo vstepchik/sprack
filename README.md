@@ -18,7 +18,8 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [x] Sort by squareness × perimeter
 - [x] Demo rectangles packing, writing output images
 - [ ] Picking best result
-- [ ] Atlas trimming
+- [ ] Atlas compacting
+- [x] Atlas trimming
 - [x] Writing sprites
 - [ ] Split code into two crates (bin and lib)
 - [ ] Make lib crate extensible with custom heuristics

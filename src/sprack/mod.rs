@@ -2,14 +2,14 @@ mod algorithm;
 mod drawing;
 mod demo;
 
-use std::cmp::{Ordering, min, max};
+use std::cmp::{Ordering, max};
 use std::path::Path;
 use std::slice::Iter;
 use std::iter::FromIterator;
 use std::collections::HashSet;
 
 pub use self::algorithm::{Dimension, Rectangle, Bin, Fit};
-pub use self::drawing::{draw_bin};
+pub use self::drawing::draw_bin;
 pub use self::demo::{draw_samples, generate_rectangles};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -29,6 +29,7 @@ pub struct PackOptions<'a> {
   pub output_path: &'a Path,
   pub bin_size: Dimension,
   pub flipping: bool,
+  pub trim: bool,
   pub pack_heuristics: HashSet<&'a PackHeuristic>,
 }
 
@@ -38,6 +39,7 @@ impl<'a> Default for PackOptions<'a> {
       output_path: Path::new("out"),
       bin_size: Dimension::new(512, 512),
       flipping: false,
+      trim: false,
       pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
     }
   }
@@ -109,7 +111,7 @@ impl PackHeuristic {
     PackHeuristic::sqp(&r.dim).partial_cmp(&PackHeuristic::sqp(&l.dim)).unwrap_or(Ordering::Equal)
   }
 
-  fn sq(d: &Dimension) -> f32 { min(d.w, d.h) as f32 / max(d.w, d.h) as f32 }
+  fn sq(d: &Dimension) -> f32 { if d.w < d.h { d.w as f32 / d.h as f32 } else { d.h as f32 / d.w as f32 } }
 
   fn sqa(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w * d.h) as f32 }
 
@@ -120,7 +122,7 @@ impl PackHeuristic {
     match *self {
       Area => (PackHeuristic::cmp_by_area, "area"),
       Perimeter => (PackHeuristic::cmp_by_perimeter, "perimeter"),
-      Side => (PackHeuristic::cmp_by_max_side, "max_side"),
+      Side => (PackHeuristic::cmp_by_max_side, "side"),
       Width => (PackHeuristic::cmp_by_w, "width"),
       Height => (PackHeuristic::cmp_by_h, "height"),
       SquarenessArea => (PackHeuristic::cmp_by_squareness_area, "squareness_area"),
