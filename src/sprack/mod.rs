@@ -7,6 +7,7 @@ use std::path::Path;
 use std::slice::Iter;
 use std::iter::FromIterator;
 use std::collections::HashSet;
+use rayon::prelude::*;
 
 pub use self::algorithm::{Dimension, Rectangle, Bin, Fit};
 pub use self::drawing::draw_bin;
@@ -28,6 +29,7 @@ pub enum PackHeuristic { Area, Perimeter, Side, Width, Height, SquarenessArea, S
 pub struct PackOptions<'a> {
   pub output_path: &'a Path,
   pub bin_size: Dimension,
+  pub atlas_compact_attempts: u8,
   pub flipping: bool,
   pub trim: bool,
   pub pack_heuristics: HashSet<&'a PackHeuristic>,
@@ -38,6 +40,7 @@ impl<'a> Default for PackOptions<'a> {
     PackOptions {
       output_path: Path::new("out"),
       bin_size: Dimension::new(512, 512),
+      atlas_compact_attempts: 0,
       flipping: false,
       trim: false,
       pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
@@ -60,14 +63,16 @@ pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackR
 
   let inputs = rectangles.iter().enumerate()
     .map(|(idx, dim)| { PackInput { id: idx as u32, dim: *dim } }).collect::<Vec<_>>();
-  let mut results = Vec::new();
-  for &heuristic in &options.pack_heuristics {
-    let mut cloned = inputs.to_owned();
-    cloned.sort_unstable_by(heuristic.get().0);
 
-    let bins = pack_sorted(&cloned, options)?;
-    results.push(PackResult { heuristics: *heuristic, bins });
-  }
+  let results: Vec<PackResult> = options.pack_heuristics.par_iter()
+    .map(|&h| {
+      let mut cloned = inputs.to_owned();
+      cloned.sort_unstable_by(h.get().0);
+
+      let bins = pack_sorted(&cloned, options).unwrap();
+      PackResult { heuristics: *h, bins }
+    })
+    .collect::<Vec<_>>();
 
   Ok(results)
 }

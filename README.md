@@ -30,7 +30,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [ ] RON?
   - [ ] Protobuf?
 - [ ] Add manual and more details to `README.md`
-- [ ] Multi-threading
+- [x] Multi-threading
 - [ ] Tests?
 - [ ] Benchmarks?
 - [ ] Refactor until feel pride

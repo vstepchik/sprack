@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Dimension { pub w: u32, pub h: u32 }
 
@@ -21,6 +23,7 @@ pub struct Bin {
   pub placements: Vec<Placement>,
   node: Box<Node>,
   last_rejected_size: Dimension,
+  total_stored_area: u64,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -44,6 +47,7 @@ impl Bin {
       placements: Vec::new(),
       node: Box::new(Node::new(size)),
       last_rejected_size: *size,
+      total_stored_area: 0,
     }
   }
 
@@ -56,11 +60,33 @@ impl Bin {
 
     if let Some(rect) = self.node.insert(rect, id, flipping_allowed) {
       self.placements.push(Placement { rect, index: id });
+      self.total_stored_area += rect.size.area();
       true
     } else {
       self.last_rejected_size = *rect;
       false
     }
+  }
+
+  pub fn fill_factor(&self) -> f32 {
+    self.total_stored_area as f32 / self.size.area() as f32
+  }
+
+  pub fn resize(&mut self, new_size: Dimension, flipping_allowed: bool) -> bool {
+    let new_size = Dimension { w: max(1, new_size.w), h: max(1, new_size.h) };
+
+    let mut new_node = Node::new(&new_size);
+    let mut placements = Vec::with_capacity(self.placements.len());
+    for placement in &self.placements {
+      if let Some(rect) = new_node.insert(&placement.rect.size, placement.index, flipping_allowed) {
+        placements.push(Placement { rect, index: placement.index });
+      } else {
+        return false;
+      }
+    }
+    self.node = Box::new(new_node);
+    self.placements = placements;
+    true
   }
 }
 
@@ -76,6 +102,8 @@ impl Dimension {
     if self.h >= inner.w && self.w >= inner.h { return Fit::Yes(true); }
     Fit::No
   }
+
+  fn area(&self) -> u64 { self.w as u64 * self.h as u64 }
 }
 
 impl Rectangle {
@@ -150,7 +178,7 @@ impl Node {
     if let Some(ref mut child1) = self.child1 {
       child1.insert(rect, id, flipping_allowed)
     } else {
-      println!("d: no child1 !?!?!?");
+      println!("no child1 !?!?!?");
       None
     }
   }

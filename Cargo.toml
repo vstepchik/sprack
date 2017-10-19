@@ -7,3 +7,4 @@ authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 rand = "*"
 image = "*"
 fs_extra = "1"
+rayon = "*"
