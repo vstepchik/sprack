@@ -17,7 +17,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [x] Sort by squareness × area
   - [x] Sort by squareness × perimeter
 - [x] Demo rectangles packing, writing output images
-- [ ] Picking best result
+- [x] Picking best result
 - [ ] Atlas compacting
 - [x] Atlas trimming
 - [x] Writing sprites
@@ -29,6 +29,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [ ] YAML
   - [ ] RON?
   - [ ] Protobuf?
+- [ ] Use logger instead of `println!`
 - [ ] Add manual and more details to `README.md`
 - [x] Multi-threading
 - [ ] Tests?

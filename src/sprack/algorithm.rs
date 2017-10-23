@@ -68,10 +68,6 @@ impl Bin {
     }
   }
 
-  pub fn fill_factor(&self) -> f32 {
-    self.total_stored_area as f32 / self.size.area() as f32
-  }
-
   pub fn resize(&mut self, new_size: Dimension, flipping_allowed: bool) -> bool {
     let new_size = Dimension { w: max(1, new_size.w), h: max(1, new_size.h) };
 

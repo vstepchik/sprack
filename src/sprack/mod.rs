@@ -1,6 +1,7 @@
 mod algorithm;
 mod drawing;
 mod demo;
+mod fs;
 
 use std::cmp::{Ordering, max};
 use std::path::Path;
@@ -12,6 +13,7 @@ use rayon::prelude::*;
 pub use self::algorithm::{Dimension, Rectangle, Bin, Fit};
 pub use self::drawing::draw_bin;
 pub use self::demo::{draw_samples, generate_rectangles};
+pub use self::fs::{new_work_dir, cleanup_work_dir, copy_result_to_out};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PackInput { pub dim: Dimension, pub id: u32 }
@@ -32,6 +34,7 @@ pub struct PackOptions<'a> {
   pub atlas_compact_attempts: u8,
   pub flipping: bool,
   pub trim: bool,
+  pub keep_work_dir: bool,
   pub pack_heuristics: HashSet<&'a PackHeuristic>,
 }
 
@@ -43,6 +46,7 @@ impl<'a> Default for PackOptions<'a> {
       atlas_compact_attempts: 0,
       flipping: false,
       trim: false,
+      keep_work_dir: false,
       pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
     }
   }

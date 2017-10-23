@@ -1,6 +1,5 @@
 extern crate image;
 extern crate rayon;
-extern crate fs_extra;
 
 mod sprack;
 
@@ -8,27 +7,28 @@ use sprack::*;
 use std::path::Path;
 use rayon::prelude::*;
 use image::RgbaImage;
-use fs_extra::dir::{copy, CopyOptions};
 
 const PNG_EXT: &'static str = "png";
-const FOLDER_NAME_BEST: &'static str = "best";
 
 fn main() {
+  let work_dir = sprack::new_work_dir().expect("Failed to create work dir");
+  println!("Work dir is {:?}", &work_dir);
   let samples = generate_rectangles(200);
   let options = PackOptions {
     flipping: true,
+    keep_work_dir: true,
     atlas_compact_attempts: 2,
     bin_size: Dimension { w: 512, h: 512 },
     ..Default::default()
   };
-  draw_samples(&options.output_path, &samples);
+  draw_samples(&work_dir, &samples);
 
   let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
   let solutions = pack(&input, &options);
 
   let best: Option<&PackResult> = match solutions {
     Ok(ref solutions) => solutions.par_iter()
-      .map(|pack_result| (pack_result, write_solution(&pack_result, &samples, &options)))
+      .map(|pack_result| (pack_result, write_solution(&pack_result, &samples, &options, &work_dir)))
       .min_by_key(|tuple| tuple.1)
       .map(|tuple| tuple.0),
     Err(e) => {
@@ -38,22 +38,18 @@ fn main() {
   };
 
   if let Some(best) = best {
-    println!("Best results with {:?}", best.heuristics);
-    let from = Path::new(&options.output_path).join(&best.heuristics.get().1);
-    let to = Path::new(&options.output_path).join(FOLDER_NAME_BEST);
-    let opts = {
-      let mut opts = CopyOptions::new();
-      opts.overwrite = true;
-      opts
-    };
-    std::fs::remove_dir_all(&to).unwrap_or(());
-    std::fs::create_dir_all(&to).expect(format!("Failed to create dir {:?}", &to).as_ref());
-    copy(&from, &to, &opts).expect(format!("Failed to copy best results into {:?}", to).as_str());
+    let best_result_dir = Path::new(&work_dir).join(&best.heuristics.get().1);
+    match sprack::copy_result_to_out(&best_result_dir, &options) {
+      Ok(size) => println!("Best results with {:?}, {} bytes", best.heuristics, size),
+      Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e)
+    }
   }
+
+  if !&options.keep_work_dir { sprack::cleanup_work_dir(&work_dir); }
 }
 
-fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &PackOptions) -> u64 {
-  let dir = Path::new(&options.output_path).join(&solution.heuristics.get().1);
+fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &PackOptions, work_dir: &AsRef<Path>) -> u64 {
+  let dir = Path::new(&work_dir.as_ref()).join(&solution.heuristics.get().1);
   std::fs::remove_dir_all(&dir).unwrap_or(());
   std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
   let mut size = 0;
