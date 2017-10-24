@@ -1,9 +1,11 @@
 ## Sprack
 
-A tool for packing sprites/lightmaps/whatever textures into atlases, written in Rust.
+A tool for packing sprites/lightmaps/whatever textures into atlases.
 
 Written while learning Rust. Inspired by [TeamHypersomnia/rectpack2D](https://github.com/TeamHypersomnia/rectpack2D)
 and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/default.html) text.
+
+Suggestions are welcome!
 
 ##### TODO
 - [x] Base algorithm
