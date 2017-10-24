@@ -5,6 +5,7 @@ extern crate sprack;
 mod sprack_bin;
 
 use sprack_bin::*;
+use sprack::*;
 use std::path::Path;
 use rayon::prelude::*;
 use image::RgbaImage;
@@ -12,8 +13,6 @@ use image::RgbaImage;
 const PNG_EXT: &'static str = "png";
 
 fn main() {
-  use sprack::bla;
-  println!("BLA! {}", bla());
   let work_dir = new_work_dir().expect("Failed to create work dir");
   println!("Work dir is {:?}", &work_dir);
   let samples = generate_rectangles(200);

@@ -249,6 +249,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "sprack"
 version = "0.1.0"
+dependencies = [
+ "rayon 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [metadata]
 "checksum adler32 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6cbd0b9af8587c72beadc9f72d35b9fbb070982c9e6203e46e93f10df25f8f45"

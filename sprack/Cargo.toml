@@ -5,3 +5,6 @@ authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 
 [lib]
 name = "sprack"
+
+[dependencies]
+rayon = "0.8"

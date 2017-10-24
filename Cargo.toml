@@ -8,3 +8,7 @@ rand = "*"
 image = "*"
 rayon = "*"
 sprack = { path = "sprack" }
+
+[[bin]]
+name = "sprack"
+path = "src/main.rs"

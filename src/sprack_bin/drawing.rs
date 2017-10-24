@@ -1,10 +1,10 @@
 extern crate image;
 
 use std::cmp::max;
+use std::path::Path;
 use image::RgbaImage;
 use image::imageops::{rotate270, replace as draw_img};
-use std::path::Path;
-use super::algorithm::Bin;
+use sprack::Bin;
 
 pub fn draw_bin(path: &AsRef<Path>, images: &[RgbaImage], bin: &Bin, trim: bool) -> u64 {
   let (width, height) = compute_atlas_size(bin, trim);

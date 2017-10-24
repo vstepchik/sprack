@@ -1,12 +1,12 @@
 extern crate rand;
 extern crate image;
 
+use std::cmp::max;
 use std::path::Path;
 use std::fs;
 use self::rand::Rng;
 use image::*;
-use std::cmp::max;
-use super::algorithm::Dimension;
+use sprack::Dimension;
 
 pub fn generate_rectangles(count: usize) -> Vec<RgbaImage> {
   let min = Dimension::new(8, 8);

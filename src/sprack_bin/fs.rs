@@ -5,8 +5,7 @@ use std::io::Result;
 use std::env::temp_dir;
 use std::path::{PathBuf, Path};
 use self::rand::{thread_rng, Rng};
-
-use super::PackOptions;
+use sprack::PackOptions;
 
 const APP_DIR_NAME: &'static str = "sprack";
 
