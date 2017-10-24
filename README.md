@@ -18,7 +18,7 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
   - [x] Sort by squareness × perimeter
 - [x] Demo rectangles packing, writing output images
 - [x] Picking best result
-- [ ] Atlas compacting
+- [x] Atlas compacting
 - [x] Atlas trimming
 - [x] Writing sprites
 - [ ] Split code into two crates (bin and lib)
@@ -34,4 +34,5 @@ and [@blackpawn's Packing Lightmaps](http://blackpawn.com/texts/lightmaps/defaul
 - [x] Multi-threading
 - [ ] Tests?
 - [ ] Benchmarks?
+- [ ] Add optional border and padding?
 - [ ] Refactor until feel pride

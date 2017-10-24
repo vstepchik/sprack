@@ -23,7 +23,6 @@ pub struct Bin {
   pub placements: Vec<Placement>,
   node: Box<Node>,
   last_rejected_size: Dimension,
-  total_stored_area: u64,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -47,7 +46,6 @@ impl Bin {
       placements: Vec::new(),
       node: Box::new(Node::new(size)),
       last_rejected_size: *size,
-      total_stored_area: 0,
     }
   }
 
@@ -60,7 +58,6 @@ impl Bin {
 
     if let Some(rect) = self.node.insert(rect, id, flipping_allowed) {
       self.placements.push(Placement { rect, index: id });
-      self.total_stored_area += rect.size.area();
       true
     } else {
       self.last_rejected_size = *rect;
@@ -74,7 +71,7 @@ impl Bin {
     let mut new_node = Node::new(&new_size);
     let mut placements = Vec::with_capacity(self.placements.len());
     for placement in &self.placements {
-      if let Some(rect) = new_node.insert(&placement.rect.size, placement.index, flipping_allowed) {
+      if let Some(rect) = new_node.insert(&placement.rect.non_flipped_size(), placement.index, flipping_allowed) {
         placements.push(Placement { rect, index: placement.index });
       } else {
         return false;
@@ -82,6 +79,8 @@ impl Bin {
     }
     self.node = Box::new(new_node);
     self.placements = placements;
+    self.size = new_size;
+    self.last_rejected_size = new_size;
     true
   }
 }
@@ -98,8 +97,6 @@ impl Dimension {
     if self.h >= inner.w && self.w >= inner.h { return Fit::Yes(true); }
     Fit::No
   }
-
-  fn area(&self) -> u64 { self.w as u64 * self.h as u64 }
 }
 
 impl Rectangle {
@@ -107,6 +104,9 @@ impl Rectangle {
   pub fn l(&self) -> u32 { self.x }
   pub fn b(&self) -> u32 { self.y + self.size.h }
   pub fn r(&self) -> u32 { self.x + self.size.w }
+  pub fn non_flipped_size(&self) -> Dimension {
+    if self.flipped { Dimension::new(self.size.h, self.size.w) } else { self.size }
+  }
 }
 
 impl Node {

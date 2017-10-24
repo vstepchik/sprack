@@ -17,7 +17,7 @@ fn main() {
   let options = PackOptions {
     flipping: true,
     keep_work_dir: true,
-    atlas_compact_attempts: 2,
+    atlas_compact_steps: 3,
     bin_size: Dimension { w: 512, h: 512 },
     ..Default::default()
   };
