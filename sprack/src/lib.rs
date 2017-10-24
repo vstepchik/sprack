@@ -1,52 +1,15 @@
 extern crate rayon;
 
 mod structs;
+mod heuristics;
 
-use std::cmp::{Ordering, min, max};
-use std::path::Path;
-use std::slice::Iter;
-use std::iter::FromIterator;
-use std::collections::HashSet;
+pub use structs::{Dimension, PackResult, PackErr, PackOptions, Bin};
+
+use self::structs::*;
+use self::heuristics::*;
+
+use std::cmp::{min, max};
 use rayon::prelude::*;
-
-pub use self::structs::{Dimension, Rectangle, Bin, Fit};
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PackInput { pub dim: Dimension, pub id: u32 }
-
-#[derive(Debug)]
-pub struct PackResult { pub bins: Vec<Bin>, pub heuristics: PackHeuristic }
-
-#[derive(Debug)]
-pub struct PackErr(pub &'static str);
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-pub enum PackHeuristic { Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter }
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct PackOptions<'a> {
-  pub output_path: &'a Path,
-  pub bin_size: Dimension,
-  pub atlas_compact_steps: u8,
-  pub flipping: bool,
-  pub trim: bool,
-  pub keep_work_dir: bool,
-  pub pack_heuristics: HashSet<&'a PackHeuristic>,
-}
-
-impl<'a> Default for PackOptions<'a> {
-  fn default() -> PackOptions<'a> {
-    PackOptions {
-      output_path: Path::new("out"),
-      bin_size: Dimension::new(512, 512),
-      atlas_compact_steps: 0,
-      flipping: false,
-      trim: false,
-      keep_work_dir: false,
-      pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
-    }
-  }
-}
 
 
 pub fn pack(rectangles: &[Dimension], options: &PackOptions) -> Result<Vec<PackResult>, PackErr> {
@@ -116,52 +79,4 @@ fn try_insert_with_growth(bin: &mut Bin, rect: &Dimension, id: u32, options: &Pa
     if !bin.resize(current_size, options.flipping) { continue }
   }
   true
-}
-
-
-pub type HeuristicReference = (fn(&PackInput, &PackInput) -> Ordering, &'static str);
-
-impl PackHeuristic {
-  fn cmp_by_area(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w * r.dim.h).cmp(&(l.dim.w * l.dim.h)) }
-
-  fn cmp_by_perimeter(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w + r.dim.h).cmp(&(l.dim.w + l.dim.h)) }
-
-  fn cmp_by_max_side(l: &PackInput, r: &PackInput) -> Ordering { max(r.dim.w, r.dim.h).cmp(&max(l.dim.w, l.dim.h)) }
-
-  fn cmp_by_w(l: &PackInput, r: &PackInput) -> Ordering { r.dim.w.cmp(&l.dim.w) }
-
-  fn cmp_by_h(l: &PackInput, r: &PackInput) -> Ordering { r.dim.h.cmp(&l.dim.h) }
-
-  fn cmp_by_squareness_area(l: &PackInput, r: &PackInput) -> Ordering {
-    PackHeuristic::sqa(&r.dim).partial_cmp(&PackHeuristic::sqa(&l.dim)).unwrap_or(Ordering::Equal)
-  }
-
-  fn cmp_by_squareness_perimeter(l: &PackInput, r: &PackInput) -> Ordering {
-    PackHeuristic::sqp(&r.dim).partial_cmp(&PackHeuristic::sqp(&l.dim)).unwrap_or(Ordering::Equal)
-  }
-
-  fn sq(d: &Dimension) -> f32 { if d.w < d.h { d.w as f32 / d.h as f32 } else { d.h as f32 / d.w as f32 } }
-
-  fn sqa(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w * d.h) as f32 }
-
-  fn sqp(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w + d.h) as f32 }
-
-  pub fn get(&self) -> HeuristicReference {
-    use PackHeuristic::*;
-    match *self {
-      Area => (PackHeuristic::cmp_by_area, "area"),
-      Perimeter => (PackHeuristic::cmp_by_perimeter, "perimeter"),
-      Side => (PackHeuristic::cmp_by_max_side, "side"),
-      Width => (PackHeuristic::cmp_by_w, "width"),
-      Height => (PackHeuristic::cmp_by_h, "height"),
-      SquarenessArea => (PackHeuristic::cmp_by_squareness_area, "squareness_area"),
-      SquarenessPerimeter => (PackHeuristic::cmp_by_squareness_perimeter, "squareness_perimeter"),
-    }
-  }
-
-  pub fn all() -> Iter<'static, PackHeuristic> {
-    use PackHeuristic::*;
-    static HEURISTICS: [PackHeuristic; 7] = [Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter];
-    HEURISTICS.into_iter()
-  }
 }
