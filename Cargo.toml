@@ -1,5 +1,5 @@
 [package]
-name = "sprack"
+name = "sprack_bin"
 version = "0.1.0"
 authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 
@@ -7,3 +7,4 @@ authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 rand = "*"
 image = "*"
 rayon = "*"
+sprack = { path = "sprack" }

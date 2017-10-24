@@ -1,9 +1,10 @@
 extern crate image;
 extern crate rayon;
+extern crate sprack;
 
-mod sprack;
+mod sprack_bin;
 
-use sprack::*;
+use sprack_bin::*;
 use std::path::Path;
 use rayon::prelude::*;
 use image::RgbaImage;
@@ -11,7 +12,9 @@ use image::RgbaImage;
 const PNG_EXT: &'static str = "png";
 
 fn main() {
-  let work_dir = sprack::new_work_dir().expect("Failed to create work dir");
+  use sprack::bla;
+  println!("BLA! {}", bla());
+  let work_dir = new_work_dir().expect("Failed to create work dir");
   println!("Work dir is {:?}", &work_dir);
   let samples = generate_rectangles(200);
   let options = PackOptions {
@@ -39,13 +42,13 @@ fn main() {
 
   if let Some(best) = best {
     let best_result_dir = Path::new(&work_dir).join(&best.heuristics.get().1);
-    match sprack::copy_result_to_out(&best_result_dir, &options) {
+    match copy_result_to_out(&best_result_dir, &options) {
       Ok(size) => println!("Best results with {:?}, {} bytes", best.heuristics, size),
       Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e)
     }
   }
 
-  if !&options.keep_work_dir { sprack::cleanup_work_dir(&work_dir); }
+  if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
 }
 
 fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &PackOptions, work_dir: &AsRef<Path>) -> u64 {
