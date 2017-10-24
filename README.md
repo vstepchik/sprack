@@ -23,7 +23,7 @@ Suggestions are welcome!
 - [x] Atlas compacting
 - [x] Atlas trimming
 - [x] Writing sprites
-- [ ] Split code into two crates (bin and lib)
+- [x] Split code into two crates (bin and lib)
 - [ ] Make lib crate extensible with custom heuristics
 - [ ] Command-line argument processing
 - [ ] Add metadata output

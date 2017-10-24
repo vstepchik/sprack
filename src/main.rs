@@ -16,17 +16,20 @@ fn main() {
   let work_dir = new_work_dir().expect("Failed to create work dir");
   println!("Work dir is {:?}", &work_dir);
   let samples = generate_rectangles(200);
-  let options = PackOptions {
-    flipping: true,
+  let options = RunOptions {
     keep_work_dir: true,
-    atlas_compact_steps: 3,
-    bin_size: Dimension { w: 512, h: 512 },
+    pack_options: PackOptions {
+      flipping: true,
+      atlas_compact_steps: 3,
+      bin_size: Dimension { w: 512, h: 512 },
+      ..Default::default()
+    },
     ..Default::default()
   };
   draw_samples(&work_dir, &samples);
 
   let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
-  let solutions = pack(&input, &options);
+  let solutions = pack(&input, &options.pack_options);
 
   let best: Option<&PackResult> = match solutions {
     Ok(ref solutions) => solutions.par_iter()
@@ -50,13 +53,13 @@ fn main() {
   if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
 }
 
-fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &PackOptions, work_dir: &AsRef<Path>) -> u64 {
+fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &RunOptions, work_dir: &AsRef<Path>) -> u64 {
   let dir = Path::new(&work_dir.as_ref()).join(&solution.heuristics.get().1);
   std::fs::remove_dir_all(&dir).unwrap_or(());
   std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
   let mut size = 0;
-  for (bin_number, bin) in solution.bins.iter().enumerate() {
-    size += draw_bin(&dir.join(bin_number.to_string()).with_extension(PNG_EXT), &images, bin, options.trim);
+  for (i, bin) in solution.bins.iter().enumerate() {
+    size += draw_bin(&dir.join(i.to_string()).with_extension(PNG_EXT), &images, bin, options.pack_options.trim);
   }
   println!("Heuristic {}: {} bins used, total size: {}b", solution.heuristics.get().1, solution.bins.len(), size);
   size

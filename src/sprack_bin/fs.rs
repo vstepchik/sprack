@@ -5,7 +5,7 @@ use std::io::Result;
 use std::env::temp_dir;
 use std::path::{PathBuf, Path};
 use self::rand::{thread_rng, Rng};
-use sprack::PackOptions;
+use sprack_bin::RunOptions;
 
 const APP_DIR_NAME: &'static str = "sprack";
 
@@ -19,7 +19,7 @@ pub fn cleanup_work_dir(path: &AsRef<Path>) {
   rm_dir(path).unwrap_or(());
 }
 
-pub fn copy_result_to_out(result_dir: &AsRef<Path>, options: &PackOptions) -> Result<u64> {
+pub fn copy_result_to_out(result_dir: &AsRef<Path>, options: &RunOptions) -> Result<u64> {
   let out = &options.output_path;
   mk_dir(out)?;
   get_png_files(&result_dir)?.iter().map(|f| copy(&f.path(), &out.join(&f.file_name()))).sum()
