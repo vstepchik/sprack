@@ -39,10 +39,7 @@ pub struct Placement {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Fit { No, Yes(bool), Exact(bool) } // bool is for `flipped`
 
-
 // ===============================================================================================
-
-
 
 impl Dimension {
   pub fn new(w: u32, h: u32) -> Dimension {
