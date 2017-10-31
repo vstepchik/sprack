@@ -80,9 +80,7 @@ fn sqa(d: &Dimension) -> f32 { squareness(d) * (d.w * d.h) as f32 }
 fn sqp(d: &Dimension) -> f32 { squareness(d) * (d.w + d.h) as f32 }
 
 fn cmp_by_key<F, T: PartialOrd>(l: &PackInput, r: &PackInput, key: F) -> Ordering
-  where F: Fn(&Dimension) -> T {
-  key(&l.dim).partial_cmp(&key(&r.dim)).unwrap_or(Ordering::Equal)
-}
+  where F: Fn(&Dimension) -> T { key(&r.dim).partial_cmp(&key(&l.dim)).unwrap_or(Ordering::Equal) }
 
 impl Debug for SortHeuristic {
   fn fmt(&self, f: &mut Formatter) -> Result { write!(f, "{}", self.name()) }

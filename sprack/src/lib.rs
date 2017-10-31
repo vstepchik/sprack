@@ -3,7 +3,8 @@ extern crate rayon;
 mod structs;
 mod heuristics;
 
-pub use structs::{Dimension, PackResult, PackErr, PackOptions, Bin};
+pub use structs::{Dimension, PackInput, PackResult, PackErr, PackOptions, Bin};
+pub use heuristics::{SortHeuristic, AreaSort, PerimeterSort, SideSort, WidthSort, HeightSort, SquarenessByAreaSort, SquarenessByPerimeterSort};
 
 use self::structs::*;
 use self::heuristics::*;
