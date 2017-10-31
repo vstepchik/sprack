@@ -7,7 +7,7 @@ use std::path::{PathBuf, Path};
 use self::rand::{thread_rng, Rng};
 use sprack_bin::RunOptions;
 
-const APP_DIR_NAME: &'static str = "sprack";
+const APP_DIR_NAME: &str = "sprack";
 
 pub fn new_work_dir() -> Result<PathBuf> {
   let work_dir = gen_work_dir_path();

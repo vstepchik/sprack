@@ -1,16 +1,11 @@
-use super::{PackHeuristic, Dimension};
+use super::{SortHeuristic, Dimension};
 
-use std::iter::FromIterator;
-use std::collections::HashSet;
-
-
-#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PackOptions<'a> {
   pub bin_size: Dimension,
   pub atlas_compact_steps: u8,
   pub flipping: bool,
   pub trim: bool,
-  pub pack_heuristics: HashSet<&'a PackHeuristic>,
+  pub sort_heuristics: &'a [&'a (SortHeuristic + Sync)],
 }
 
 impl<'a> Default for PackOptions<'a> {
@@ -20,7 +15,7 @@ impl<'a> Default for PackOptions<'a> {
       atlas_compact_steps: 0,
       flipping: false,
       trim: false,
-      pack_heuristics: HashSet::from_iter(PackHeuristic::all()),
+      sort_heuristics: &super::DEFAULT_HEURISTICS,
     }
   }
 }

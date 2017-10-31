@@ -5,16 +5,22 @@ mod options;
 pub use self::bin::*;
 pub use self::node::*;
 pub use self::options::*;
-use super::PackHeuristic;
+use super::{SortHeuristic, ALL as DEFAULT_HEURISTICS};
 
 use std::cmp::max;
+use std::fmt::{Debug, Result, Formatter};
 
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PackInput { pub dim: Dimension, pub id: u32 }
 
-#[derive(Debug)]
-pub struct PackResult { pub bins: Vec<Bin>, pub heuristics: PackHeuristic }
+pub struct PackResult<'a> { pub bins: Vec<Bin>, pub heuristics: &'a SortHeuristic }
+
+impl<'a> Debug for PackResult<'a> {
+  fn fmt(&self, f: &mut Formatter) -> Result {
+    write!(f, "{}[{}]", self.heuristics.name(), self.bins.len())
+  }
+}
 
 #[derive(Debug)]
 pub struct PackErr(pub &'static str);

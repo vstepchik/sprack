@@ -1,55 +1,89 @@
 use super::{Dimension, PackInput};
 
-use std::slice::Iter;
-use std::cmp::{Ordering, max};
+use std::fmt::{Debug, Result, Formatter};
+use std::cmp::{Ordering, PartialOrd, max};
 
+pub const ALL: [&(SortHeuristic + Sync); 7] = [
+  &AreaSort,
+  &PerimeterSort,
+  &SideSort,
+  &WidthSort,
+  &HeightSort,
+  &SquarenessByAreaSort,
+  &SquarenessByPerimeterSort,
+];
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-pub enum PackHeuristic { Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter }
+pub struct AreaSort;
 
-pub type HeuristicReference = (fn(&PackInput, &PackInput) -> Ordering, &'static str);
+pub struct PerimeterSort;
 
-impl PackHeuristic {
-  fn cmp_by_area(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w * r.dim.h).cmp(&(l.dim.w * l.dim.h)) }
+pub struct SideSort;
 
-  fn cmp_by_perimeter(l: &PackInput, r: &PackInput) -> Ordering { (r.dim.w + r.dim.h).cmp(&(l.dim.w + l.dim.h)) }
+pub struct WidthSort;
 
-  fn cmp_by_max_side(l: &PackInput, r: &PackInput) -> Ordering { max(r.dim.w, r.dim.h).cmp(&max(l.dim.w, l.dim.h)) }
+pub struct HeightSort;
 
-  fn cmp_by_w(l: &PackInput, r: &PackInput) -> Ordering { r.dim.w.cmp(&l.dim.w) }
+pub struct SquarenessByAreaSort;
 
-  fn cmp_by_h(l: &PackInput, r: &PackInput) -> Ordering { r.dim.h.cmp(&l.dim.h) }
+pub struct SquarenessByPerimeterSort;
 
-  fn cmp_by_squareness_area(l: &PackInput, r: &PackInput) -> Ordering {
-    PackHeuristic::sqa(&r.dim).partial_cmp(&PackHeuristic::sqa(&l.dim)).unwrap_or(Ordering::Equal)
+pub trait SortHeuristic: Sync {
+  fn name(&self) -> &'static str;
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering;
+}
+
+impl SortHeuristic for AreaSort {
+  fn name(&self) -> &'static str { "area" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering { cmp_by_key(l, r, |d| d.w * d.h) }
+}
+
+impl SortHeuristic for PerimeterSort {
+  fn name(&self) -> &'static str { "perimeter" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering { cmp_by_key(l, r, |d| d.w + d.h) }
+}
+
+impl SortHeuristic for SideSort {
+  fn name(&self) -> &'static str { "side" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering { cmp_by_key(l, r, |d| max(d.w, d.h)) }
+}
+
+impl SortHeuristic for WidthSort {
+  fn name(&self) -> &'static str { "width" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering {
+    cmp_by_key(l, r, |d| d.w)
   }
+}
 
-  fn cmp_by_squareness_perimeter(l: &PackInput, r: &PackInput) -> Ordering {
-    PackHeuristic::sqp(&r.dim).partial_cmp(&PackHeuristic::sqp(&l.dim)).unwrap_or(Ordering::Equal)
+impl SortHeuristic for HeightSort {
+  fn name(&self) -> &'static str { "height" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering {
+    cmp_by_key(l, r, |d| d.h)
   }
+}
 
-  fn sq(d: &Dimension) -> f32 { if d.w < d.h { d.w as f32 / d.h as f32 } else { d.h as f32 / d.w as f32 } }
+impl SortHeuristic for SquarenessByAreaSort {
+  fn name(&self) -> &'static str { "squareness_area" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering { cmp_by_key(l, r, |d| sqa(d)) }
+}
 
-  fn sqa(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w * d.h) as f32 }
+impl SortHeuristic for SquarenessByPerimeterSort {
+  fn name(&self) -> &'static str { "squareness_perimeter" }
+  fn cmp(&self, l: &PackInput, r: &PackInput) -> Ordering { cmp_by_key(l, r, |d| sqp(d)) }
+}
 
-  fn sqp(d: &Dimension) -> f32 { PackHeuristic::sq(d) * (d.w + d.h) as f32 }
+fn squareness(d: &Dimension) -> f32 {
+  if d.w < d.h { d.w as f32 / d.h as f32 } else { d.h as f32 / d.w as f32 }
+}
 
-  pub fn get(&self) -> HeuristicReference {
-    use PackHeuristic::*;
-    match *self {
-      Area => (PackHeuristic::cmp_by_area, "area"),
-      Perimeter => (PackHeuristic::cmp_by_perimeter, "perimeter"),
-      Side => (PackHeuristic::cmp_by_max_side, "side"),
-      Width => (PackHeuristic::cmp_by_w, "width"),
-      Height => (PackHeuristic::cmp_by_h, "height"),
-      SquarenessArea => (PackHeuristic::cmp_by_squareness_area, "squareness_area"),
-      SquarenessPerimeter => (PackHeuristic::cmp_by_squareness_perimeter, "squareness_perimeter"),
-    }
-  }
+fn sqa(d: &Dimension) -> f32 { squareness(d) * (d.w * d.h) as f32 }
 
-  pub fn all() -> Iter<'static, PackHeuristic> {
-    use PackHeuristic::*;
-    static HEURISTICS: [PackHeuristic; 7] = [Area, Perimeter, Side, Width, Height, SquarenessArea, SquarenessPerimeter];
-    HEURISTICS.into_iter()
-  }
+fn sqp(d: &Dimension) -> f32 { squareness(d) * (d.w + d.h) as f32 }
+
+fn cmp_by_key<F, T: PartialOrd>(l: &PackInput, r: &PackInput, key: F) -> Ordering
+  where F: Fn(&Dimension) -> T {
+  key(&l.dim).partial_cmp(&key(&r.dim)).unwrap_or(Ordering::Equal)
+}
+
+impl Debug for SortHeuristic {
+  fn fmt(&self, f: &mut Formatter) -> Result { write!(f, "{}", self.name()) }
 }
