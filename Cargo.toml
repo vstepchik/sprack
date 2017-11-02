@@ -3,12 +3,15 @@ name = "sprack_bin"
 version = "0.1.0"
 authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 
+[[bin]]
+name = "sprack"
+path = "src/main.rs"
+
 [dependencies]
 rand = "*"
 image = "*"
 rayon = "*"
+docopt = "*"
+serde = "*"
+serde_derive = "*"
 sprack = { path = "sprack" }
-
-[[bin]]
-name = "sprack"
-path = "src/main.rs"

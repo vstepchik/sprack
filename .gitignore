@@ -1,5 +1,6 @@
 /.idea/
 /*.iml
+/ignore/
 /target/
 /out/
 /sprack/target
