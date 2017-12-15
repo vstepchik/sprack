@@ -11,7 +11,7 @@ use sprack_bin::*;
 use sprack::*;
 use std::path::Path;
 use rayon::prelude::*;
-use image::RgbaImage;
+use image::{DynamicImage, GenericImage};
 use docopt::Docopt;
 
 const PNG_EXT: &str = "png";
@@ -92,35 +92,34 @@ fn main() {
     println!("> {:?}", path)
   }
 
-//  let samples = generate_rectangles(200);
-//  draw_samples(&work_dir, &samples);
-//
-//  let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
-//  let solutions = pack(&input, &options.pack_options);
-//
-//  let best: Option<&PackResult> = match solutions {
-//    Ok(ref solutions) => solutions.par_iter()
-//      .map(|pack_result| (pack_result, write_solution(pack_result, &samples, &options, &work_dir)))
-//      .min_by_key(|tuple| tuple.1)
-//      .map(|tuple| tuple.0),
-//    Err(e) => {
-//      eprintln!("Error: {:?}", e);
-//      None
-//    }
-//  };
-//
-//  if let Some(best) = best {
-//    let best_result_dir = Path::new(&work_dir).join(&best.heuristics.name());
-//    match copy_result_to_out(&best_result_dir, &options) {
-//      Ok(size) => println!("Best results with {}, {} bytes", &best.heuristics.name(), size),
-//      Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e),
-//    }
-//  }
-//
-//  if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
+  let samples = options.input_paths.iter().map(|path| image::open(path).unwrap()).collect::<Vec<_>>();
+
+  let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
+  let solutions = pack(&input, &options.pack_options);
+
+  let best: Option<&PackResult> = match solutions {
+    Ok(ref solutions) => solutions.par_iter()
+      .map(|pack_result| (pack_result, write_solution(pack_result, &samples, &options, &work_dir)))
+      .min_by_key(|tuple| tuple.1)
+      .map(|tuple| tuple.0),
+    Err(e) => {
+      eprintln!("Error: {:?}", e);
+      None
+    }
+  };
+
+  if let Some(best) = best {
+    let best_result_dir = Path::new(&work_dir).join(&best.heuristics.name());
+    match copy_result_to_out(&best_result_dir, &options) {
+      Ok(size) => println!("Best results with {}, {} bytes", &best.heuristics.name(), size),
+      Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e),
+    }
+  }
+
+  if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
 }
 
-fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &RunOptions, work_dir: &AsRef<Path>) -> u64 {
+fn write_solution(solution: &PackResult, images: &[DynamicImage], options: &RunOptions, work_dir: &AsRef<Path>) -> u64 {
   let dir = Path::new(&work_dir.as_ref()).join(&solution.heuristics.name());
   std::fs::remove_dir_all(&dir).unwrap_or(());
   std::fs::create_dir_all(&dir).expect(format!("Failed to create dir {:?}", &dir).as_ref());
