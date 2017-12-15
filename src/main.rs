@@ -17,7 +17,7 @@ use docopt::Docopt;
 const PNG_EXT: &str = "png";
 
 const USAGE: &'static str = "
-Usage:  sprack [options] ([-w SIDE] [-h SIDE] | [-s SIDE]) [--demo | --help | <files>...]
+Usage:  sprack [options] ([-w SIDE] [-h SIDE] | [-s SIDE]) [--help | <files>...]
 
 Options:
     -r, --recursive             Recursively descend into directories.
@@ -33,8 +33,6 @@ Options:
                                 INC = min(1, SIDE/(NUM+1)). Allowed values are 0..255, the higher
                                 the value - the more time packing will take [default: 0].
     -k, --keep-work-dir         Do not delete temporary files after work.
-        --demo                  Generate in-memory random colored rectangles with up arrows and
-                                compact them into sprite atlases.
     -h, --help                  Show this help message.
 ";
 
@@ -48,7 +46,6 @@ struct Args {
   flag_size: Option<u32>,
   flag_trim: bool,
   flag_flipping: bool,
-  flag_demo: bool,
   flag_keep_work_dir: bool,
   flag_recursive: bool,
   flag_help: bool,
@@ -74,7 +71,6 @@ impl<'a> From<&'a Args> for RunOptions<'a> {
       keep_work_dir: args.flag_keep_work_dir,
       input_paths: args.arg_files.iter().map(|f| Path::new(f.as_str())).collect(),
       output_path: Path::new(args.flag_out.as_str()),
-      demo_run: args.flag_demo,
       recursive: args.flag_recursive,
       pack_options,
       ..Default::default()
@@ -96,32 +92,32 @@ fn main() {
     println!("> {:?}", path)
   }
 
-  let samples = generate_rectangles(200);
-  draw_samples(&work_dir, &samples);
-
-  let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
-  let solutions = pack(&input, &options.pack_options);
-
-  let best: Option<&PackResult> = match solutions {
-    Ok(ref solutions) => solutions.par_iter()
-      .map(|pack_result| (pack_result, write_solution(pack_result, &samples, &options, &work_dir)))
-      .min_by_key(|tuple| tuple.1)
-      .map(|tuple| tuple.0),
-    Err(e) => {
-      eprintln!("Error: {:?}", e);
-      None
-    }
-  };
-
-  if let Some(best) = best {
-    let best_result_dir = Path::new(&work_dir).join(&best.heuristics.name());
-    match copy_result_to_out(&best_result_dir, &options) {
-      Ok(size) => println!("Best results with {}, {} bytes", &best.heuristics.name(), size),
-      Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e),
-    }
-  }
-
-  if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
+//  let samples = generate_rectangles(200);
+//  draw_samples(&work_dir, &samples);
+//
+//  let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
+//  let solutions = pack(&input, &options.pack_options);
+//
+//  let best: Option<&PackResult> = match solutions {
+//    Ok(ref solutions) => solutions.par_iter()
+//      .map(|pack_result| (pack_result, write_solution(pack_result, &samples, &options, &work_dir)))
+//      .min_by_key(|tuple| tuple.1)
+//      .map(|tuple| tuple.0),
+//    Err(e) => {
+//      eprintln!("Error: {:?}", e);
+//      None
+//    }
+//  };
+//
+//  if let Some(best) = best {
+//    let best_result_dir = Path::new(&work_dir).join(&best.heuristics.name());
+//    match copy_result_to_out(&best_result_dir, &options) {
+//      Ok(size) => println!("Best results with {}, {} bytes", &best.heuristics.name(), size),
+//      Err(e) => eprintln!("Failed to copy results from {:?} to {:?} - {:?}", &best_result_dir, &options.output_path, e),
+//    }
+//  }
+//
+//  if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
 }
 
 fn write_solution(solution: &PackResult, images: &[RgbaImage], options: &RunOptions, work_dir: &AsRef<Path>) -> u64 {

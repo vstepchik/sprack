@@ -1,15 +1,11 @@
 [package]
-name = "sprack_bin"
+name = "sprack-demo"
 version = "0.1.0"
 authors = ["Vitaliy Stepchik <vitalatron@gmail.com>"]
 
 [[bin]]
-name = "sprack"
-path = "src/main.rs"
-
-[[bin]]
 name = "rectgen"
-path = "rect_gen/src/main.rs"
+path = "src/main.rs"
 
 [dependencies]
 rand = "*"
@@ -18,4 +14,3 @@ rayon = "*"
 docopt = "*"
 serde = "*"
 serde_derive = "*"
-sprack = { path = "sprack" }

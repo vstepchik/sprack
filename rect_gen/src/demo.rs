@@ -1,7 +1,6 @@
 extern crate rand;
 extern crate image;
 
-use std::cmp::max;
 use std::path::Path;
 use std::fs;
 use self::rand::Rng;
@@ -37,20 +36,13 @@ fn new_rect_image(width: u32, height: u32, color: Rgba<u8>) -> RgbaImage {
   img
 }
 
-pub fn draw_samples(path: &AsRef<Path>, samples: &[RgbaImage]) {
+pub fn draw_samples(path: &AsRef<Path>, prefix: &str, samples: &[RgbaImage]) {
   fs::create_dir_all(&path).expect(format!("Failed to create dir {:?}", &path.as_ref()).as_ref());
 
-  let size = samples.iter().fold(Dimension { w: 0, h: 0 }, |acc, s| {
-    Dimension { w: acc.w + s.width(), h: max(acc.h, s.height()) }
-  });
-
   let mut offset = 0;
-  let mut img = RgbaImage::new(size.w, size.h);
   for s in samples {
-    image::imageops::replace(&mut img, s, offset, 0);
-    offset += s.width();
+    let name = format!("{}{}.png", prefix, offset);
+    s.save(Path::new(&path.as_ref()).join(name)).unwrap();
+    offset += 1;
   }
-  img.save(Path::new(&path.as_ref()).join("samples.png")).unwrap();
-
-  println!("samples [{}x{}] written", size.w, size.h);
 }
