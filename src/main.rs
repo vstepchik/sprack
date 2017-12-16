@@ -10,6 +10,7 @@ mod sprack_bin;
 use sprack_bin::*;
 use sprack::*;
 use std::path::Path;
+use std::ffi::OsStr;
 use rayon::prelude::*;
 use image::{DynamicImage, GenericImage};
 use docopt::Docopt;
@@ -92,7 +93,10 @@ fn main() {
     println!("> {:?}", path)
   }
 
-  let samples = options.input_paths.iter().map(|path| image::open(path).unwrap()).collect::<Vec<_>>();
+  let samples = options.input_paths.iter()
+    .filter(|path| is_supported_format(path))
+    .map(|path| image::open(path).unwrap())
+    .collect::<Vec<_>>();
 
   let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
   let solutions = pack(&input, &options.pack_options);
@@ -117,6 +121,16 @@ fn main() {
   }
 
   if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
+}
+
+fn is_supported_format(path: &Path) -> bool {
+  if let Some(ext) = path.extension().map(OsStr::to_string_lossy).map(|e| e.to_lowercase()) {
+    let ext = ext.as_str();
+    match ext {
+      "png" | "bmp" | "gif" | "jpg" | "jpeg" | "ico" | "tiff" | "webp" | "ppm" => true,
+      _ => false
+    }
+  } else { false }
 }
 
 fn write_solution(solution: &PackResult, images: &[DynamicImage], options: &RunOptions, work_dir: &AsRef<Path>) -> u64 {
