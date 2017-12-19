@@ -90,17 +90,25 @@ fn main() {
 
   let options = RunOptions::from(&args);
   for path in &options.input_paths {
-    println!("> {:?}", path)
+    if path.is_dir() {
+      println!("> [{:?}]", path)
+    } else {
+      println!("> {:?}", path)
+    }
   }
 
+  println!("filtering and reading samples");
   let samples = options.input_paths.iter()
     .filter(|path| is_supported_format(path))
     .map(|path| image::open(path).unwrap())
     .collect::<Vec<_>>();
 
+  println!("converting samples into rectangles");
   let input = samples.iter().map(|s| Dimension { w: s.width(), h: s.height() }).collect::<Vec<_>>();
+  println!("finding solutions");
   let solutions = pack(&input, &options.pack_options);
 
+  println!("writing solutions & picking best");
   let best: Option<&PackResult> = match solutions {
     Ok(ref solutions) => solutions.par_iter()
       .map(|pack_result| (pack_result, write_solution(pack_result, &samples, &options, &work_dir)))
@@ -112,6 +120,7 @@ fn main() {
     }
   };
 
+  println!("copying best solution");
   if let Some(best) = best {
     let best_result_dir = Path::new(&work_dir).join(&best.heuristics.name());
     match copy_result_to_out(&best_result_dir, &options) {
@@ -120,6 +129,7 @@ fn main() {
     }
   }
 
+  println!("cleanup work");
   if !&options.keep_work_dir { cleanup_work_dir(&work_dir); }
 }
 
