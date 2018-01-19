@@ -3,7 +3,7 @@ use sprack::{Dimension, PackOptions};
 use std::path::{Path, PathBuf};
 use docopt::Docopt;
 
-const USAGE: &'static str = "
+const USAGE: &'static str = "\
 Usage:  sprack [options] ([-w SIDE] [-h SIDE] | [-s SIDE]) [--help | <files>...]
 
 Options:
@@ -59,10 +59,7 @@ impl<'a> From<Args> for RunOptions<'a> {
 
     RunOptions {
       keep_work_dir: args.flag_keep_work_dir,
-      input_paths: args.arg_files.iter()
-        .map(|f| f.clone())
-        .map(|f| PathBuf::from(f))
-        .collect(),
+      input_paths: args.arg_files.iter().map(PathBuf::from).collect(),
       output_path: Path::new(&args.flag_out.clone()).to_owned(),
       recursive: args.flag_recursive,
       pack_options,
